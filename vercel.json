@@ -11,8 +11,8 @@
     ],
     "routes": [
         {
-            "src": "/api/data\\.json$",
-            "status": 403
+            "src": "/api/(.*)",
+            "dest": "/api/$1.js"
         },
         {
             "src": "/(.*)",
