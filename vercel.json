@@ -1,8 +1,23 @@
 {
-  "routes": [
-    {
-      "src": "/api/data\\.json$",
-      "status": 403
-    }
-  ]
+    "version": 3,
+    "builds": [
+        {
+            "src": "index.html",
+            "use": "@vercel/static"
+        },
+        {
+            "src": "api/**/*.js",
+            "use": "@vercel/node"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/data\\.json$",
+            "status": 403
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/index.html"
+        }
+    ]
 }

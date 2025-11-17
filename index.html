@@ -40,38 +40,48 @@
         <video autoplay playsinline data-shaka-player id="video"></video>
     </div>
 
+
     <script>
-        let channels = [];
         let player;
         let key1 = null;
         let key2 = null;
         let streamUrl = "";
 
+        // Fetch channel data securely using JWT
         async function fetchChannelData(slug) {
-            const tokenRes = await fetch("/api/token");
-            const { token } = await tokenRes.json();
+            try {
+                // Get JWT token from your API
+                const tokenRes = await fetch("/api/token");
+                if (!tokenRes.ok) throw new Error("Failed to get token");
+                const { token } = await tokenRes.json();
 
-            const res = await fetch(`/api/channel?id=${slug}`, {
-                headers: {
-                    "Authorization": "Bearer " + token
+                // Fetch channel data from secure backend
+                const res = await fetch(`/api/channel?id=${slug}`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    console.error("Channel fetch error:", err);
+                    return null;
                 }
-            });
 
-            return res.json();
+                return res.json();
+            } catch (e) {
+                console.error("Error fetching channel data:", e);
+                return null;
+            }
         }
-        
+
+        // Helper to convert name to slug
         function slugify(name) {
             return name.toLowerCase().replace(/\s+/g, '-');
         }
 
-        function getChannelFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            const chSlug = params.get("id");
-            if (!chSlug) return null;
-            return channels.find(ch => slugify(ch.name) === chSlug);
-        }
-
+        // Initialize Shaka Player with channel
         async function init(channel) {
+            if (!channel) return console.error("Channel not found");
+
             document.title = `${channel.name} - Free`;
 
             const video = document.getElementById("video");
@@ -99,6 +109,7 @@
                 enableKeyboardPlaybackControls: true
             });
 
+            // DRM keys if available
             if (channel.license_key && channel.license_key.includes(":")) {
                 const parts = channel.license_key.split(":");
                 key1 = parts[0];
@@ -108,7 +119,6 @@
             const drmConfig = { clearKeys: { [key1]: key2 } };
             player.configure({ drm: drmConfig });
 
-            // Expose for debugging
             window.player = player;
             window.ui = ui;
 
@@ -116,6 +126,7 @@
             player.addEventListener("error", onPlayerErrorEvent);
             controls.addEventListener("error", onUIErrorEvent);
 
+            // Optional HDNEA token for Jio streams
             let hdnea = "";
             try {
                 const m3u = await fetch("https://raw.githubusercontent.com/AstroSmarty/JioStar/refs/heads/main/playlist.m3u").then(r => r.text());
@@ -169,14 +180,19 @@
             console.error("Unable to load the Shaka UI library!", error);
         }
 
+        // Main entry
         async function main() {
             const slug = new URLSearchParams(location.search).get("id");
+            if (!slug) return console.error("No channel id provided");
+
             const channel = await fetchChannelData(slug);
+            if (!channel) return;
+
             init(channel);
         }
 
         document.addEventListener("DOMContentLoaded", main);
-        document.addEventListener("shaka-ui-load-failed", initFailed);    
+        document.addEventListener("shaka-ui-load-failed", initFailed);
     </script>
 
 </body>
