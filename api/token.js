@@ -12,7 +12,7 @@ export default function handler(req, res) {
     const token = jwt.sign(
       { key: process.env.API_KEY },   // payload (API key hidden in JWT)
       process.env.JWT_SECRET,         // secret
-      { expiresIn: '10m' }           // short-lived token
+      { expiresIn: '1m' }           // short-lived token
     );
 
     res.status(200).json({ token });
